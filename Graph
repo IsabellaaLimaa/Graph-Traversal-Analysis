@@ -1,0 +1,151 @@
+from collections import deque
+
+class Graph:
+    def __init__(self, V=None, E=None):
+        raise NotImplementedError
+    def iter(self):
+        raise NotImplementedError
+    def add_vertex(self, v):
+        raise NotImplementedError
+    def add_edge(self, e):
+        raise NotImplementedError
+    def nbrs(self, v):
+        raise NotImplementedError
+
+    def is_connected(self, v1, v2):
+        '''returns True (False) if there is (is not) a path between v1 and v2'''
+        return v2 in self.bfs(v1)
+
+    def bfs(self, v):
+        '''returns a breadth-first search tree. - dictionary'''
+        tree = {}
+        to_visit = deque()
+        to_visit.append((None, v))
+        while to_visit:
+            a,b = to_visit.popleft()
+            if b not in tree:
+                tree[b] = a
+                for n in self.nbrs(b):
+                    to_visit.append((b,n))
+        return tree
+
+    def shortest_path(self, start, end):
+        '''returns the shortest path between v1 and v2.'''
+        visited = set()
+        parent = {}
+        queue = deque([start])
+        visited.add(start)
+        parent[start] = None
+
+        while queue:
+            current = queue.popleft()
+            if current == end:
+                break
+            for neighbor in self.nbrs(current):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    parent[neighbor] = current
+                    queue.append(neighbor)
+
+        if end not in parent:
+            return []
+
+        path = []
+        curr = end
+        while curr is not None:
+            path.append(curr)
+            curr = parent[curr]
+        path.reverse()
+        return path
+
+
+    def count_trees(self):
+        '''isolated structures within an overall graph
+        should return a list of distinct trees in a graph as well as the number of trees'''
+        visited = set()
+        trees = []
+        for v in self.V:
+            if v not in visited:
+                tree = self.bfs(v)
+                visited.update(tree)
+                trees.append(tree)
+        return trees, len(trees)
+
+class EdgeSetGraph(Graph):
+    def __init__(self, V=None, E=None):
+        '''initialize a graph with a set of vertices and a set of edges'''
+        self.V = set() 
+        self.E = set() 
+        if V is not None:
+            for v in V:
+                self.add_vertex(v)
+            if E is not None:
+                for a, b in E:
+                    self.add_edge((a,b))
+
+    def iter(self):
+        '''returns an iterator over all vertices in the graph'''
+        return iter(self.V)
+
+    def add_vertex(self, v):
+        '''- adds a vertex to the graph'''
+        self.V.add(v)
+
+    def add_edge(self, e):
+        '''- adds an edge to the graph'''
+        a, b = e
+        if a in self.V and b in self.V:
+            self.E.add((b, a))
+            self.E.add((a, b))
+        
+    def nbrs(self, v):
+        ''' returns an iterator over all neighbors of v'''
+        nbrs = set()
+        for e in self.E:
+            if e[0] == v:
+                nbrs.add(e[1])
+        return nbrs
+
+
+class AdjacencySetGraph(Graph):
+    def __init__(self, V=None, E=None):
+        '''initialize a graph with a set of vertices and a set of edges'''
+        self.V = set() 
+        self._nbrs = {}
+        if V:
+            for v in V:
+                self.add_vertex(v)
+        if E:
+            for e in E:
+                self.add_edge(e)
+
+    def iter(self):
+        '''returns an iterator over all vertices in the graph'''
+        return iter(self.V)
+
+    def add_vertex(self, v):
+        '''- adds a vertex to the graph'''
+        if v not in self.V:
+            self.V.add(v)
+            self._nbrs[v] = set()
+
+    def add_edge(self, e):
+        '''- adds an edge to the graph'''
+        a, b = e
+        if a in self._nbrs and b in self._nbrs:
+            self._nbrs[a].add(b)
+            self._nbrs[b].add(a)
+        
+    def nbrs(self,v):
+        ''' returns an iterator over all neighbors of v'''
+        return self._nbrs[v]
+
+if __name__ == '__main__':
+    V = {'A', 'B', 'C', 'D', 'E'}
+    E = {('A', 'B'), ('A', 'C'), ('B', 'C'), ('C', 'E'), ('D', 'E')}
+    g = AdjacencySetGraph(V, E)
+    trees, count = g.count_trees()
+    print(trees)
+    #[{A:None, B:A, C:A, E:C, D:E}]
+    print(count)
+    #1
